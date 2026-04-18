@@ -1,0 +1,102 @@
+[
+  {
+    "query": "报销审批流程是什么？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "报销申请需要在什么时候提交？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "报销审批先经过谁？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "财务复核之后会进入什么环节？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "报销一般多久打款？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "超过5000元报销要补什么材料？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "遇到节假日报销打款怎么处理？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_BAOXIAO"]
+  },
+  {
+    "query": "加班申请需要提前几天提交？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "紧急加班最晚多久内补提申请？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "超过4小时加班需要谁审批？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "加班默认是调休还是加班费？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "调休有效期多久？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "未审批通过的加班会计入工时吗？",
+    "department": "public",
+    "relevant_document_ids": ["DOC_PUBLIC_JIABAN"]
+  },
+  {
+    "query": "出差住宿标准上限是多少？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "一线城市出差住宿每晚上限多少钱？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "新一线城市住宿标准是多少？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "超标20%以内由谁审批？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "超标超过20%需要谁审批？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "差旅住宿报销必须提供什么票据？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  },
+  {
+    "query": "这份住宿标准从什么时候开始生效？",
+    "department": "finance",
+    "relevant_document_ids": ["DOC_FINANCE_ZHUSU"]
+  }
+]

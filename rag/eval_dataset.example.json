@@ -1,0 +1,23 @@
+[
+  {
+    "query": "请问报销审批流程是什么？",
+    "department": "public",
+    "relevant_document_ids": [
+      "请替换为真实document_id_1"
+    ]
+  },
+  {
+    "query": "加班申请需要提前几天提交？",
+    "department": "public",
+    "relevant_document_ids": [
+      "请替换为真实document_id_2"
+    ]
+  },
+  {
+    "query": "出差住宿标准上限是多少？",
+    "department": "finance",
+    "relevant_document_ids": [
+      "请替换为真实document_id_3"
+    ]
+  }
+]

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG 智能知识助手</title>
+  <style>
+    :root {
+      --bg: #f3f5fb;
+      --card: #ffffff;
+      --line: #e5e7ef;
+      --text: #1f2937;
+      --sub: #6b7280;
+      --primary: #4f46e5;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: radial-gradient(circle at top right, #e8ecff, transparent 45%), var(--bg); color: var(--text); font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .layout { height: 100vh; display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; }
+    .panel, .chat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.08); }
+    .panel { padding: 14px; display: flex; flex-direction: column; gap: 12px; overflow: auto; }
+    .title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+    .subtitle { font-size: 12px; color: var(--sub); margin-top: -2px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; color: var(--sub); }
+    input, textarea, button { font-size: 14px; border-radius: 10px; outline: none; }
+    input, textarea { border: 1px solid var(--line); padding: 10px; background: #fff; }
+    textarea { resize: vertical; min-height: 72px; }
+    button { border: none; cursor: pointer; background: var(--primary); color: #fff; padding: 10px 12px; font-weight: 600; }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+    .progress-wrap { border: 1px solid var(--line); border-radius: 10px; background: #f9fafb; padding: 10px; }
+    .progress-bar { position: relative; height: 10px; border-radius: 999px; background: #e5e7eb; overflow: hidden; margin-top: 6px; }
+    .progress-fill { position: absolute; left: 0; top: 0; height: 100%; width: 0; background: linear-gradient(90deg, #6366f1, #8b5cf6); transition: width 0.25s; }
+    .status-box { min-height: 100px; background: #fafbff; border: 1px dashed var(--line); border-radius: 10px; padding: 10px; white-space: pre-wrap; font-size: 12px; color: #374151; }
+    .chat { display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; }
+    .chat-header { border-bottom: 1px solid var(--line); padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .session { font-size: 12px; color: var(--sub); background: #f8fafc; border: 1px solid #e5e7eb; padding: 4px 8px; border-radius: 999px; }
+    .messages { padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .msg { max-width: 80%; border-radius: 12px; border: 1px solid #e5e7eb; padding: 10px 12px; white-space: pre-wrap; line-height: 1.55; font-size: 14px; }
+    .msg.user { align-self: flex-end; background: #eef2ff; }
+    .msg.assistant { align-self: flex-start; background: #fff; }
+    .msg .meta { margin-top: 6px; font-size: 12px; color: #6b7280; }
+    .sources { margin-top: 8px; border-top: 1px dashed #d1d5db; padding-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+    details.source-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px; background: #fafafa; }
+    .source-snippet { margin-top: 6px; font-size: 12px; color: #4b5563; white-space: pre-wrap; line-height: 1.5; }
+    .composer { border-top: 1px solid var(--line); padding: 10px; display: grid; grid-template-columns: 1fr 96px; gap: 10px; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <section class="panel">
+      <div><div class="title">知识库接入</div><div class="subtitle">支持 PDF / Word / TXT，单次最多 5 个文件</div></div>
+      <div class="field"><label>用户</label><input id="user" value="demo_user" /></div>
+      <div class="field"><label>部门（权限过滤）</label><input id="department" value="public" /></div>
+      <div class="field"><label>自定义元数据（JSON）</label><textarea id="meta">{"project":"rag-demo"}</textarea></div>
+      <div class="field"><label>选择文件</label><input id="files" type="file" multiple /></div>
+      <button id="uploadBtn">上传并入库</button>
+      <div class="progress-wrap"><div id="progressText">上传进度：0%</div><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div></div>
+      <div id="uploadStatus" class="status-box">等待上传...</div>
+    </section>
+    <section class="chat">
+      <div class="chat-header"><div class="chat-title">RAG 对话助手</div><div id="sessionTag" class="session"></div></div>
+      <div id="messages" class="messages"></div>
+      <div class="composer"><input id="question" placeholder="请输入问题（支持多轮上下文）" /><button id="sendBtn">发送</button></div>
+    </section>
+  </div>
+  <script>
+    const userEl = document.getElementById('user');
+    const deptEl = document.getElementById('department');
+    const filesEl = document.getElementById('files');
+    const metaEl = document.getElementById('meta');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const progressText = document.getElementById('progressText');
+    const progressFill = document.getElementById('progressFill');
+    const messagesEl = document.getElementById('messages');
+    const questionEl = document.getElementById('question');
+    const sendBtn = document.getElementById('sendBtn');
+    const sessionTag = document.getElementById('sessionTag');
+    const sessionId = 'session_' + Math.random().toString(36).slice(2, 10);
+    sessionTag.textContent = '会话: ' + sessionId;
+
+    function setProgress(pct) {
+      const value = Math.max(0, Math.min(100, pct));
+      progressText.textContent = `上传进度：${value}%`;
+      progressFill.style.width = value + '%';
+    }
+
+    function appendMsg(role, text, extra = {}) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'user' : 'assistant');
+      const main = document.createElement('div');
+      main.textContent = text || '';
+      div.appendChild(main);
+      if (extra.intent || extra.rewritten_query) {
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `${extra.intent ? '意图: ' + extra.intent : ''}${extra.rewritten_query ? ' | 改写: ' + extra.rewritten_query : ''}`;
+        div.appendChild(meta);
+      }
+      const sources = extra.sources || [];
+      if (sources.length) {
+        const sourceWrap = document.createElement('div');
+        sourceWrap.className = 'sources';
+        for (const s of sources) {
+          const card = document.createElement('details');
+          card.className = 'source-card';
+          const summary = document.createElement('summary');
+          const score = (typeof s.score === 'number') ? s.score.toFixed(4) : 'N/A';
+          const pageText = (s.page_index !== undefined && s.page_index !== null) ? ` | page=${s.page_index}` : '';
+          const sourceLabel = (s.source_file ? String(s.source_file).split(/[/\\]/).pop() : (s.document_id || 'unknown'));
+          summary.textContent = `[${s.ref}] score=${score}${pageText} | ${sourceLabel}`;
+          card.appendChild(summary);
+          const snip = document.createElement('div');
+          snip.className = 'source-snippet';
+          snip.textContent = s.snippet || '(无片段)';
+          card.appendChild(snip);
+          sourceWrap.appendChild(card);
+        }
+        div.appendChild(sourceWrap);
+      }
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function uploadWithProgress(url, formData, onProgress) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url);
+        xhr.upload.onprogress = (event) => {
+          if (!event.lengthComputable) return;
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        };
+        xhr.onload = () => {
+          try { resolve(JSON.parse(xhr.responseText || '{}')); } catch (e) { reject(e); }
+        };
+        xhr.onerror = () => reject(new Error('网络异常'));
+        xhr.send(formData);
+      });
+    }
+
+    async function pollIngestStatus(taskId) {
+      for (let i = 0; i < 60; i += 1) {
+        await new Promise((r) => setTimeout(r, 1000));
+        const resp = await fetch(`/ingest/status/${taskId}`);
+        const data = await resp.json();
+        if (!data.success) { uploadStatus.textContent = '任务状态查询失败: ' + JSON.stringify(data.error || {}); return; }
+        const t = data.data?.task || {};
+        if (typeof t.progress === 'number') setProgress(t.progress);
+        uploadStatus.textContent = '任务状态:\n' + JSON.stringify(t, null, 2);
+        if (t.status === 'completed' || t.status === 'failed') return;
+      }
+      uploadStatus.textContent = '任务超时，请稍后重试';
+    }
+
+    uploadBtn.onclick = async () => {
+      const files = [...(filesEl.files || [])];
+      if (!files.length) { uploadStatus.textContent = '请先选择文件'; return; }
+      if (files.length > 5) { uploadStatus.textContent = '单次最多上传5个文件'; return; }
+      let metaObj = {};
+      try { metaObj = JSON.parse(metaEl.value || '{}'); } catch { uploadStatus.textContent = '自定义元数据 JSON 格式错误'; return; }
+
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f));
+      fd.append('department', deptEl.value.trim() || 'public');
+      fd.append('user', userEl.value.trim() || 'anonymous');
+      fd.append('custom_metadata', JSON.stringify(metaObj));
+
+      uploadBtn.disabled = true;
+      setProgress(0);
+      uploadStatus.textContent = '开始上传...';
+      try {
+        const data = await uploadWithProgress('/ingest', fd, setProgress);
+        if (!data.success) {
+          uploadStatus.textContent = '上传失败:\n' + JSON.stringify(data.error || {}, null, 2);
+        } else {
+          const taskId = data.data?.task_id;
+          uploadStatus.textContent = '已提交任务，等待处理...';
+          if (taskId) await pollIngestStatus(taskId);
+          else setProgress(100);
+        }
+      } catch (e) {
+        uploadStatus.textContent = '上传异常: ' + e;
+      } finally { uploadBtn.disabled = false; }
+    };
+
+    async function doQuery() {
+      const q = questionEl.value.trim();
+      if (!q) return;
+      appendMsg('user', q);
+      questionEl.value = '';
+      sendBtn.disabled = true;
+      try {
+        const payload = { question: q, user: userEl.value.trim() || 'anonymous', department: deptEl.value.trim() || 'public', session_id: sessionId };
+        const resp = await fetch('/query', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        const data = await resp.json();
+        if (!data.success) appendMsg('assistant', '请求失败: ' + JSON.stringify(data.error || {}));
+        else {
+          const out = data.data || {};
+          appendMsg('assistant', out.answer || '(无回答)', { intent: out.intent, rewritten_query: out.rewritten_query, sources: out.sources || [] });
+        }
+      } catch (e) { appendMsg('assistant', '请求异常: ' + e); }
+      finally { sendBtn.disabled = false; }
+    }
+
+    sendBtn.onclick = doQuery;
+    questionEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doQuery(); });
+  </script>
+</body>
+</html>
